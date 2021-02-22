@@ -1,0 +1,38 @@
+service: kinesis-with-es
+
+plugins:
+  - serverless-iam-roles-per-function
+  - serverless-webpack
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage}
+  region: ${opt:region}
+  lambdaHashingVersion: 20201221
+
+custom:
+  webpack:
+    excludeFiles:
+      - "src/**/*.test.ts"
+      - "src/**/__mocks__/*.ts"
+  esDomain:
+    endpoint: !GetAtt ESDomain.DomainEndpoint
+
+resources:
+  Resources:
+    MyStream: ${file(./resources/KinesisStream.yml):MyStream}
+    ESDomain: ${file(./resources/ESDomain.yml):MyDomain}
+
+functions:
+  kinesisToEs:
+    handler: src/handlers/kinesisToEs.handler
+    environment:
+      DOMAIN_REGION: ${self:provider.region}
+      DOMAIN_ENDPOINT: ${self:custom.esDomain.endpoint}
+    events:
+      - stream:
+          type: kinesis
+          arn: !GetAtt MyStream.Arn
+    iamRoleStatements:
+      - ${file(./iam/ESIAM.yml):ESIAM}

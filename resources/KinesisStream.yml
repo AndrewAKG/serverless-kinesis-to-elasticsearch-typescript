@@ -1,0 +1,5 @@
+MyStream:
+  Type: AWS::Kinesis::Stream
+  Properties:
+    Name: MyKinesisStream
+    ShardCount: 1
